@@ -1,0 +1,5 @@
+{
+  "name": "Jojo's Web-Store",
+  "description": "A full-stack capable e-commerce application running entirely client-side with React, TypeScript, and Tailwind. Features LocalStorage persistence, Admin Dashboard, SHA-256 Auth, and Gemini-powered product assistance.",
+  "requestFramePermissions": []
+}
