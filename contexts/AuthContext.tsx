@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { hashPassword } from '../services/auth';
 
+const API_URL = 'http://localhost:3001/api/auth';
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, pass: string) => Promise<void>;
@@ -28,56 +30,105 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    const usersStr = localStorage.getItem('jojo_users_db');
-    const users = usersStr ? JSON.parse(usersStr) : {};
-    
-    const hashedPass = await hashPassword(pass);
-    const storedCreds = users[email];
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
 
-    if (storedCreds && storedCreds.password === hashedPass) {
-      const userData: User = {
-        id: storedCreds.id,
-        name: storedCreds.name,
-        email: email,
-        isAdmin: email.includes('admin') // Simple mock admin logic based on email
+      if (!res.ok) {
+        // If it's a 404/500 network error, throw specific error to trigger catch.
+        // If it's 400/401 (invalid creds), handle normally.
+        if (res.status >= 500 || res.status === 404) throw new Error("Server unreachable");
+        const data = await res.json();
+        throw new Error(data.error || 'Login failed');
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      localStorage.setItem('jojo_user', JSON.stringify(data.user));
+      localStorage.setItem('jojo_token', data.token);
+
+    } catch (err: any) {
+      console.warn('Backend login failed, attempting offline auth:', err.message);
+      
+      // Offline Fallback
+      const dbString = localStorage.getItem('jojo_users_db');
+      const db = dbString ? JSON.parse(dbString) : [];
+      const existingUser = db.find((u: any) => u.email === email);
+      
+      if (!existingUser) throw new Error('User not found (Offline Mode)');
+      
+      const hashedInput = await hashPassword(pass);
+      if (hashedInput !== existingUser.passwordHash) throw new Error('Invalid credentials');
+
+      const userObj = { 
+        id: existingUser.id, 
+        name: existingUser.name, 
+        email: existingUser.email, 
+        isAdmin: existingUser.isAdmin 
       };
-      setUser(userData);
-      localStorage.setItem('jojo_user', JSON.stringify(userData));
-    } else {
-      throw new Error('Invalid credentials');
+      setUser(userObj);
+      localStorage.setItem('jojo_user', JSON.stringify(userObj));
     }
   };
 
   const register = async (email: string, pass: string, name: string) => {
-    const usersStr = localStorage.getItem('jojo_users_db');
-    const users = usersStr ? JSON.parse(usersStr) : {};
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass, name })
+      });
 
-    if (users[email]) throw new Error('User exists');
+      if (!res.ok) {
+        if (res.status >= 500 || res.status === 404) throw new Error("Server unreachable");
+        const data = await res.json();
+        throw new Error(data.error || 'Registration failed');
+      }
 
-    const hashedPass = await hashPassword(pass);
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      password: hashedPass
-    };
+      const data = await res.json();
+      setUser(data.user);
+      localStorage.setItem('jojo_user', JSON.stringify(data.user));
+      localStorage.setItem('jojo_token', data.token);
 
-    users[email] = newUser;
-    localStorage.setItem('jojo_users_db', JSON.stringify(users));
-    
-    // Auto login
-    const userData: User = {
-        id: newUser.id,
-        name: name,
-        email: email,
+    } catch (err: any) {
+      console.warn('Backend register failed, attempting offline register:', err.message);
+
+      // Offline Fallback
+      const dbString = localStorage.getItem('jojo_users_db');
+      const db = dbString ? JSON.parse(dbString) : [];
+      
+      if (db.find((u: any) => u.email === email)) throw new Error('User already exists (Offline Mode)');
+
+      const passwordHash = await hashPassword(pass);
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        email,
+        passwordHash,
         isAdmin: email.includes('admin')
-    };
-    setUser(userData);
-    localStorage.setItem('jojo_user', JSON.stringify(userData));
+      };
+
+      db.push(newUser);
+      localStorage.setItem('jojo_users_db', JSON.stringify(db));
+
+      const userObj = { 
+        id: newUser.id, 
+        name: newUser.name, 
+        email: newUser.email, 
+        isAdmin: newUser.isAdmin 
+      };
+      setUser(userObj);
+      localStorage.setItem('jojo_user', JSON.stringify(userObj));
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('jojo_user');
+    localStorage.removeItem('jojo_token');
   };
 
   return (

@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Product, FilterState, ProductCategory, SortOption } from '../types';
+import { Product, FilterState, SortOption } from '../types';
 import { INITIAL_PRODUCTS } from '../constants';
+
+// Backend API URL
+const API_URL = 'http://localhost:3001/api';
 
 interface ProductContextType {
   products: Product[];
@@ -10,9 +13,9 @@ interface ProductContextType {
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   sortOption: SortOption;
   setSortOption: (option: SortOption) => void;
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Product) => Promise<void>;
+  updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   getProductById: (id: string) => Product | undefined;
 }
 
@@ -35,35 +38,80 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
   const [sortOption, setSortOption] = useState<SortOption>('newest');
 
-  // Load from LS or Init
-  useEffect(() => {
-    const stored = localStorage.getItem('jojo_products');
-    if (stored) {
-      setProducts(JSON.parse(stored));
-    } else {
-      setProducts(INITIAL_PRODUCTS);
-      localStorage.setItem('jojo_products', JSON.stringify(INITIAL_PRODUCTS));
+  const syncLocal = (currentProducts: Product[]) => {
+    localStorage.setItem('jojo_products', JSON.stringify(currentProducts));
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch(`${API_URL}/products`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      setProducts(data);
+      syncLocal(data);
+    } catch (error) {
+      console.warn("Backend unavailable, switching to offline mode.");
+      const local = localStorage.getItem('jojo_products');
+      if (local) {
+        setProducts(JSON.parse(local));
+      } else {
+        setProducts(INITIAL_PRODUCTS);
+        syncLocal(INITIAL_PRODUCTS);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  // Sync to LS
-  useEffect(() => {
-    if (!loading && products.length > 0) {
-      localStorage.setItem('jojo_products', JSON.stringify(products));
+  const addProduct = async (product: Product) => {
+    // Optimistic update
+    const newProducts = [...products, product];
+    setProducts(newProducts);
+    syncLocal(newProducts);
+
+    try {
+      await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product)
+      });
+    } catch (err) {
+      console.warn('Backend add failed, kept local change.');
     }
-  }, [products, loading]);
-
-  const addProduct = (product: Product) => {
-    setProducts(prev => [...prev, product]);
   };
 
-  const updateProduct = (updated: Product) => {
-    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+  const updateProduct = async (updated: Product) => {
+    const newProducts = products.map(p => p.id === updated.id ? updated : p);
+    setProducts(newProducts);
+    syncLocal(newProducts);
+
+    try {
+      await fetch(`${API_URL}/products/${updated.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch (err) {
+       console.warn('Backend update failed, kept local change.');
+    }
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+  const deleteProduct = async (id: string) => {
+    const newProducts = products.filter(p => p.id !== id);
+    setProducts(newProducts);
+    syncLocal(newProducts);
+
+    try {
+      await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.warn('Backend delete failed, kept local change.');
+    }
   };
 
   const getProductById = (id: string) => products.find(p => p.id === id);
@@ -88,8 +136,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       case 'rating':
         res.sort((a, b) => b.rating - a.rating);
         break;
+      case 'newest':
       default:
-        // Assuming standard order is ID or generic
+        res.sort((a, b) => Number(b.id) - Number(a.id));
         break;
     }
     return res;

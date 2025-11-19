@@ -25,12 +25,12 @@ const AdminDashboard: React.FC = () => {
       description: '',
       category: ProductCategory.ELECTRONICS,
       stock: 0,
-      image: 'https://picsum.photos/400/400',
+      image: 'https://image.pollinations.ai/prompt/product',
       rating: 0
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.price) return;
     
     if (editingId === 'new') {
@@ -38,12 +38,18 @@ const AdminDashboard: React.FC = () => {
         ...form,
         id: Date.now().toString(),
       } as Product;
-      addProduct(newProduct);
+      await addProduct(newProduct);
     } else {
-      updateProduct(form as Product);
+      await updateProduct(form as Product);
     }
     setEditingId(null);
     setForm({});
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      await deleteProduct(id);
+    }
   };
 
   return (
@@ -132,7 +138,7 @@ const AdminDashboard: React.FC = () => {
                 <td className="p-4">{p.stock}</td>
                 <td className="p-4 text-right">
                   <button onClick={() => handleEdit(p)} className="text-accent hover:text-blue-400 mr-4">Edit</button>
-                  <button onClick={() => deleteProduct(p.id)} className="text-red-500 hover:text-red-400">Delete</button>
+                  <button onClick={() => handleDelete(p.id)} className="text-red-500 hover:text-red-400">Delete</button>
                 </td>
               </tr>
             ))}
