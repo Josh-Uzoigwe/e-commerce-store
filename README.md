@@ -1,20 +1,45 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Jojo's Web-Store 🛍️
 
-# Run and deploy your AI Studio app
+A luxury e-commerce platform built with React, TypeScript, Tailwind CSS, and Node.js.
 
-This contains everything you need to run your app locally.
+## Features
+- **Full Stack**: Node.js + SQLite Backend with React Frontend.
+- **Offline Capable**: Falls back to LocalStorage if the backend is offline.
+- **AI Powered**: Gemini-powered Product Concierge and Support Agent.
+- **Auth**: Google Sign-In + JWT Authentication.
+- **Admin Dashboard**: Manage products (Add, Edit, Delete).
 
-View your app in AI Studio: https://ai.studio/apps/drive/1_5HyeBuCax0BaSLvvCjTTUHGaKQHWRkd
+## 🚀 Quick Start
 
-## Run Locally
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-**Prerequisites:**  Node.js
+### 2. Configure Environment
+Create a `.env` file in the root directory:
+```env
+VITE_API_KEY=your_gemini_api_key
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+```
 
+### 3. Start the Backend
+This runs the Express server and initializes the SQLite database.
+```bash
+node server/server.js
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 4. Start the Frontend
+Open a new terminal terminal and run:
+```bash
+npm run dev
+```
+
+## 📦 Build for Production
+```bash
+npm run build
+```
+
+## 🔑 Admin Access
+- **Email**: `admin@jojos.com`
+- **Password**: `admin123`

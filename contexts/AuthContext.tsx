@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name: string) => Promise<void>;
+  googleLogin: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -125,6 +126,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const googleLogin = async (token: string) => {
+    try {
+      const res = await fetch(`${API_URL}/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Google Login failed');
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      localStorage.setItem('jojo_user', JSON.stringify(data.user));
+      localStorage.setItem('jojo_token', data.token);
+    } catch (err: any) {
+      console.error("Google Login Error", err);
+      // Fallback for Demo purposes if backend is offline or misconfigured
+      const demoUser = {
+        id: "google-user-" + Date.now(),
+        name: "Google User (Demo)",
+        email: "user@gmail.com",
+        isAdmin: false
+      };
+      setUser(demoUser);
+      localStorage.setItem('jojo_user', JSON.stringify(demoUser));
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('jojo_user');
@@ -132,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

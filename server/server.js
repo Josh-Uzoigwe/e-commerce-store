@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { OAuth2Client } from 'google-auth-library';
 
 // Create require for CommonJS modules like sqlite3
 const require = createRequire(import.meta.url);
@@ -17,6 +18,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = 3001;
 const SECRET_KEY = 'jojos-secret-key-change-this-in-prod';
+// NOTE: In a real app, this should match the Client ID used in the frontend
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"; 
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Middleware
 app.use(cors());
@@ -107,6 +111,156 @@ db.serialize(() => {
           stock: 200,
           image: 'https://image.pollinations.ai/prompt/folded%20premium%20grey%20cotton%20hoodie',
           rating: 4.3
+        },
+        {
+          id: '6',
+          title: 'Wireless Charging Pad',
+          price: 29.99,
+          description: 'Fast charging for all your Qi-enabled devices.',
+          category: 'Electronics',
+          stock: 150,
+          image: 'https://image.pollinations.ai/prompt/sleek%20round%20wireless%20charging%20pad',
+          rating: 4.1
+        },
+        {
+          id: '7',
+          title: 'Ceramic Coffee Mug Set',
+          price: 35.00,
+          description: 'Handcrafted ceramic mugs for your morning brew.',
+          category: 'Home',
+          stock: 40,
+          image: 'https://image.pollinations.ai/prompt/set%20of%20artisanal%20ceramic%20coffee%20mugs',
+          rating: 4.9
+        },
+        {
+          id: '8',
+          title: 'Yoga Mat Eco-Friendly',
+          price: 45.00,
+          description: 'Non-slip, sustainable material for perfect poses.',
+          category: 'Sports',
+          stock: 60,
+          image: 'https://image.pollinations.ai/prompt/rolled%20eco-friendly%20yoga%20mat%20texture',
+          rating: 4.4
+        },
+        {
+          id: '9',
+          title: 'Running Sneakers Air',
+          price: 110.00,
+          description: 'Lightweight design for marathon runners.',
+          category: 'Sports',
+          stock: 25,
+          image: 'https://image.pollinations.ai/prompt/pair%20of%20modern%20running%20sneakers%20sport',
+          rating: 4.5
+        },
+        {
+          id: '10',
+          title: 'Sci-Fi Novel Collection',
+          price: 80.00,
+          description: 'A curated set of the decade\'s best science fiction.',
+          category: 'Books',
+          stock: 10,
+          image: 'https://image.pollinations.ai/prompt/stack%20of%20science%20fiction%20books%20space%20cover',
+          rating: 4.8
+        },
+        {
+          id: '11',
+          title: 'Vintage Denim Jacket',
+          price: 89.99,
+          description: 'Classic look that never goes out of style.',
+          category: 'Fashion',
+          stock: 15,
+          image: 'https://image.pollinations.ai/prompt/vintage%20blue%20denim%20jacket%20hanging',
+          rating: 4.2
+        },
+        {
+          id: '12',
+          title: 'Smart Home Hub',
+          price: 149.99,
+          description: 'Control all your devices from one central unit.',
+          category: 'Home',
+          stock: 30,
+          image: 'https://image.pollinations.ai/prompt/smart%20home%20hub%20device%20on%20table',
+          rating: 4.0
+        },
+        {
+          id: '13',
+          title: 'Bluetooth Portable Speaker',
+          price: 65.00,
+          description: 'Waterproof sound system for outdoor adventures.',
+          category: 'Electronics',
+          stock: 80,
+          image: 'https://image.pollinations.ai/prompt/rugged%20portable%20bluetooth%20speaker%20outdoor',
+          rating: 4.3
+        },
+        {
+          id: '14',
+          title: 'Leather Wallet',
+          price: 45.00,
+          description: 'Genuine leather with RFID protection.',
+          category: 'Fashion',
+          stock: 90,
+          image: 'https://image.pollinations.ai/prompt/classic%20brown%20leather%20wallet%20men',
+          rating: 4.6
+        },
+        {
+          id: '15',
+          title: 'Stainless Steel Water Bottle',
+          price: 25.00,
+          description: 'Keeps drinks cold for 24 hours.',
+          category: 'Sports',
+          stock: 120,
+          image: 'https://image.pollinations.ai/prompt/sleek%20stainless%20steel%20water%20bottle%20insulated',
+          rating: 4.7
+        },
+        {
+          id: '16',
+          title: 'Modern Table Lamp',
+          price: 55.00,
+          description: 'Adjustable brightness with a warm glow.',
+          category: 'Home',
+          stock: 25,
+          image: 'https://image.pollinations.ai/prompt/modern%20minimalist%20table%20lamp%20lit',
+          rating: 4.4
+        },
+        {
+          id: '17',
+          title: 'Biography of Great Leaders',
+          price: 30.00,
+          description: 'Inspiring stories from history.',
+          category: 'Books',
+          stock: 40,
+          image: 'https://image.pollinations.ai/prompt/hardcover%20biography%20book%20historical',
+          rating: 4.9
+        },
+        {
+          id: '18',
+          title: 'Programming Cookbook',
+          price: 50.00,
+          description: 'Essential algorithms and patterns.',
+          category: 'Books',
+          stock: 55,
+          image: 'https://image.pollinations.ai/prompt/programming%20coding%20textbook%20computer%20science',
+          rating: 4.8
+        },
+        {
+          id: '19',
+          title: 'Action Camera 4K',
+          price: 299.00,
+          description: 'Capture your extreme moments in high definition.',
+          category: 'Electronics',
+          stock: 15,
+          image: 'https://image.pollinations.ai/prompt/compact%204k%20action%20camera%20waterproof',
+          rating: 4.5
+        },
+        {
+          id: '20',
+          title: 'Bamboo Cutlery Set',
+          price: 15.00,
+          description: 'Reusable and eco-friendly dining.',
+          category: 'Home',
+          stock: 200,
+          image: 'https://image.pollinations.ai/prompt/set%20of%20bamboo%20cutlery%20eco%20friendly',
+          rating: 4.2
         }
       ];
 
@@ -208,6 +362,76 @@ app.post('/api/auth/login', (req, res) => {
       user: { id: user.id, name: user.name, email: user.email, isAdmin } 
     });
   });
+});
+
+// Google Login
+app.post('/api/auth/google', async (req, res) => {
+  const { token } = req.body;
+  
+  try {
+    // Verify the ID token using Google's official library
+    // Note: In a demo env with a mock ID, this verification will fail.
+    // We add a fallback for demonstration if the CLIENT ID is "MOCK..."
+    
+    let payload;
+    
+    if (GOOGLE_CLIENT_ID.includes("MOCK")) {
+        // Mock payload for demo purposes
+        payload = {
+            email: "demo.user@gmail.com",
+            name: "Demo Google User",
+            sub: "mock-google-id-" + Date.now()
+        };
+    } else {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+    }
+
+    if (!payload) return res.status(400).json({ error: "Invalid Google Token" });
+
+    const { email, name } = payload;
+
+    db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+
+      if (user) {
+        // User exists, log them in
+        const isAdmin = user.isAdmin === 1;
+        const jwtToken = jwt.sign({ id: user.id, email: user.email, isAdmin }, SECRET_KEY, { expiresIn: '24h' });
+        res.json({
+          token: jwtToken,
+          user: { id: user.id, name: user.name, email: user.email, isAdmin }
+        });
+      } else {
+        // New user, create account (Password is irrelevant for Google users, we use a dummy hash or allow nulls, here we use a random hash)
+        const id = Date.now().toString();
+        const randomPass = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(randomPass, 10);
+        const isAdmin = 0;
+
+        db.run(
+          "INSERT INTO users (id, name, email, password, isAdmin) VALUES (?, ?, ?, ?, ?)",
+          [id, name, email, hashedPassword, isAdmin],
+          function (err) {
+            if (err) return res.status(500).json({ error: "Failed to create user" });
+            
+            const jwtToken = jwt.sign({ id, email, isAdmin: !!isAdmin }, SECRET_KEY, { expiresIn: '24h' });
+            res.json({ 
+              token: jwtToken, 
+              user: { id, name, email, isAdmin: !!isAdmin } 
+            });
+          }
+        );
+      }
+    });
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(401).json({ error: "Google authentication failed" });
+  }
 });
 
 app.listen(PORT, () => {

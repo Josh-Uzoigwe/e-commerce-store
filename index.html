@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,38 +7,76 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              primary: '#0f172a', // slate-900
-              secondary: '#1e293b', // slate-800
-              accent: '#3b82f6', // blue-500
+              primary: '#000000', 
+              secondary: '#111111', 
+              accent: '#D4AF37', // Metallic Gold
+              'accent-hover': '#B8860B', // Dark Goldenrod
+            },
+            backgroundImage: {
+              'gold-gradient': 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+              'dark-mesh': 'radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 100%)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out forwards',
+              'slide-up': 'slideUp 0.5s ease-out forwards',
+              'bounce-short': 'bounceShort 0.4s ease-in-out',
+              'pulse-short': 'pulse 0.5s ease-in-out 1',
+              'shimmer': 'shimmer 2s linear infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              bounceShort: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-6px)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' }
+              }
             }
           }
         }
       }
     </script>
     <style>
-      body {
-        background-color: #0f172a;
-        color: #ffffff;
-      }
       /* Custom scrollbar for aesthetics */
       ::-webkit-scrollbar {
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #0f172a; 
+        background: transparent; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #334155; 
+        background: #444; 
         border-radius: 4px;
+        border: 1px solid #000;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #475569; 
+        background: #D4AF37; /* Gold hover */
+      }
+      
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .dark .glass-panel {
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.2); /* Gold subtle border */
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -54,13 +92,15 @@
     "jsonwebtoken": "https://aistudiocdn.com/jsonwebtoken@^9.0.2",
     "url": "https://aistudiocdn.com/url@^0.11.4",
     "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "vite": "https://aistudiocdn.com/vite@^7.2.2"
+    "google-auth-library": "https://aistudiocdn.com/google-auth-library@^10.5.0",
+    "@react-oauth/google": "https://aistudiocdn.com/@react-oauth/google@^0.12.2"
   }
 }
 </script>
 </head>
-  <body>
+  <body class="bg-gray-50 text-slate-900 dark:bg-black dark:bg-dark-mesh dark:text-gray-100 transition-colors duration-300 min-h-screen">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

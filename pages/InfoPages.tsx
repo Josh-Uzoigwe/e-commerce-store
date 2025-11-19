@@ -1,33 +1,34 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getSupportResponse } from '../services/geminiService';
 
 export const About: React.FC = () => (
   <div className="max-w-3xl mx-auto px-4 py-16 animate-fade-in">
-    <h1 className="text-4xl font-bold mb-6 text-white">About Jojo's Web-Store</h1>
-    <div className="prose prose-invert">
-      <p className="text-lg text-gray-300 mb-4 leading-relaxed">
+    <h1 className="text-4xl font-bold mb-6 text-slate-900 dark:text-white">About Jojo's Web-Store</h1>
+    <div className="prose prose-slate dark:prose-invert">
+      <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
         Welcome to <span className="text-accent font-bold">Jojo's Web-Store</span>, the ultimate destination for modern digital lifestyle products. 
         Established in 2024, we bridge the gap between cutting-edge technology and everyday aesthetic.
       </p>
-      <p className="text-gray-400 leading-relaxed mb-6">
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
         Our mission is to provide high-quality, curated items that enhance your workspace, home, and style. 
         We believe in a future where commerce is seamless, secure, and intelligent.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <div className="bg-secondary p-6 rounded-lg border border-slate-700 text-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700 text-center shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="text-3xl mb-2">🚀</div>
-          <h3 className="font-bold text-white">Innovation</h3>
-          <p className="text-sm text-gray-400 mt-2">Always ahead of the curve.</p>
+          <h3 className="font-bold text-slate-900 dark:text-white">Innovation</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Always ahead of the curve.</p>
         </div>
-        <div className="bg-secondary p-6 rounded-lg border border-slate-700 text-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700 text-center shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="text-3xl mb-2">🛡️</div>
-          <h3 className="font-bold text-white">Security</h3>
-          <p className="text-sm text-gray-400 mt-2">Client-side encryption.</p>
+          <h3 className="font-bold text-slate-900 dark:text-white">Security</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Client-side encryption.</p>
         </div>
-        <div className="bg-secondary p-6 rounded-lg border border-slate-700 text-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-gray-200 dark:border-slate-700 text-center shadow-sm dark:shadow-none transition-colors duration-300">
           <div className="text-3xl mb-2">💎</div>
-          <h3 className="font-bold text-white">Quality</h3>
-          <p className="text-sm text-gray-400 mt-2">Premium curated selection.</p>
+          <h3 className="font-bold text-slate-900 dark:text-white">Quality</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Premium curated selection.</p>
         </div>
       </div>
     </div>
@@ -42,76 +43,88 @@ export const Support: React.FC = () => {
   const handleAiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-
+    
     setLoading(true);
     setResponse('');
-    
-    const aiReply = await getSupportResponse(query);
-    setResponse(aiReply);
+    const result = await getSupportResponse(query);
+    setResponse(result);
     setLoading(false);
   };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16 animate-fade-in">
-      <h1 className="text-4xl font-bold mb-6 text-white">Support Center</h1>
+      <h1 className="text-4xl font-bold mb-6 text-slate-900 dark:text-white">Support Center</h1>
       
-      {/* AI Assistant Section */}
-      <div className="bg-slate-800 p-6 rounded-lg border border-slate-600 mb-10 shadow-xl">
+      {/* AI Agent Section */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-8 mb-12 shadow-xl animate-slide-up">
         <div className="flex items-center mb-4">
-          <div className="bg-accent/20 p-2 rounded-lg mr-3">
-            <span className="text-2xl">🤖</span>
-          </div>
+          <span className="text-4xl mr-4">🤖</span>
           <div>
-            <h2 className="text-xl font-bold text-white">AI Instant Assistant</h2>
-            <p className="text-sm text-gray-400">Describe your issue for an immediate response.</p>
+            <h2 className="text-2xl font-bold">AI Instant Assistant</h2>
+            <p className="text-gray-300 text-sm">Ask about returns, shipping, or product details.</p>
           </div>
         </div>
-
-        <form onSubmit={handleAiSubmit} className="space-y-4">
-          <textarea 
+        
+        <form onSubmit={handleAiSubmit} className="relative">
+          <input 
+            type="text" 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type your issue here (e.g., 'My order is late' or 'How do I return an item?')..."
-            className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:border-accent focus:ring-1 focus:ring-accent h-24 resize-none transition-all"
+            placeholder="How do I return an item?"
+            className="w-full bg-slate-700/50 border border-slate-600 rounded-lg py-3 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent pr-24"
           />
-          <div className="flex justify-end">
-            <button 
-              type="submit"
-              disabled={loading || !query.trim()}
-              className="bg-accent hover:bg-blue-600 disabled:bg-slate-700 disabled:text-gray-500 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-lg shadow-blue-500/20"
-            >
-              {loading ? 'Analyzing...' : 'Get Instant Help'}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="absolute right-2 top-2 bg-accent hover:bg-blue-600 text-white px-4 py-1 rounded-md text-sm font-bold transition-colors disabled:opacity-50"
+          >
+            {loading ? '...' : 'Ask'}
+          </button>
         </form>
 
         {response && (
-          <div className="mt-6 bg-secondary border-l-4 border-accent p-4 rounded-r-lg animate-fade-in">
-            <p className="text-sm text-accent font-bold mb-1">Jojo's Support Agent:</p>
-            <p className="text-gray-200 leading-relaxed">{response}</p>
+          <div className="mt-6 bg-slate-700/30 p-4 rounded-lg border border-slate-600 animate-fade-in">
+            <p className="leading-relaxed">{response}</p>
           </div>
         )}
       </div>
 
-      {/* Traditional Contact Info */}
-      <div className="bg-secondary p-8 rounded-lg border border-slate-700 shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-white">Other Ways to Contact Us</h2>
-        <div className="space-y-6">
-          <div className="flex items-start">
-            <div className="bg-slate-800 p-3 rounded-full mr-4 text-xl">📧</div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Email Us</h3>
-              <p className="text-gray-400">support@jojos-webstore.com</p>
-              <p className="text-xs text-gray-500 mt-1">Response time: &lt; 24 hours</p>
-            </div>
-          </div>
-          <div className="flex items-start">
-            <div className="bg-slate-800 p-3 rounded-full mr-4 text-xl">📞</div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Call Us</h3>
-              <p className="text-gray-400">+1 (555) 123-JOJO</p>
-              <p className="text-xs text-gray-500 mt-1">Mon-Fri, 9am - 6pm EST</p>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Contact Us</h3>
+          <ul className="space-y-3 text-gray-600 dark:text-gray-300">
+            <li className="flex items-center">
+              <span className="w-6">📧</span> support@jojos-webstore.com
+            </li>
+            <li className="flex items-center">
+              <span className="w-6">📞</span> +1 (555) 123-4567
+            </li>
+            <li className="flex items-center">
+              <span className="w-6">📍</span> 123 Tech Avenue, Silicon Valley, CA
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">FAQ</h3>
+          <div className="space-y-4">
+            <details className="group bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+              <summary className="font-medium cursor-pointer p-4 list-none flex justify-between items-center text-slate-900 dark:text-white">
+                <span>What is the return policy?</span>
+                <span className="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div className="px-4 pb-4 text-gray-600 dark:text-gray-400 text-sm">
+                We accept returns within 30 days of purchase. Items must be unused and in original packaging.
+              </div>
+            </details>
+            <details className="group bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+              <summary className="font-medium cursor-pointer p-4 list-none flex justify-between items-center text-slate-900 dark:text-white">
+                <span>How long does shipping take?</span>
+                <span className="transition group-open:rotate-180">▼</span>
+              </summary>
+              <div className="px-4 pb-4 text-gray-600 dark:text-gray-400 text-sm">
+                Standard shipping takes 3-5 business days. Express shipping is available at checkout.
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -120,65 +133,36 @@ export const Support: React.FC = () => {
 };
 
 export const PrivacyPolicy: React.FC = () => (
-  <div className="max-w-3xl mx-auto px-4 py-16 text-gray-300 animate-fade-in">
-    <h1 className="text-3xl font-bold mb-6 text-white">Privacy Policy</h1>
-    <p className="mb-6 text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
-    
-    <section className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-3">1. Data Collection</h2>
-      <p className="mb-4 leading-relaxed">
-        We collect information necessary to process your orders and improve your shopping experience. 
-        This includes name, email, and shipping address. We do not store credit card details; 
-        payments are processed securely via client-side simulation for this demo.
-      </p>
-    </section>
-
-    <section className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-3">2. Local Storage</h2>
-      <p className="mb-4 leading-relaxed">
-        Jojo's Web-Store uses your browser's <code>LocalStorage</code> to remember your shopping cart, login session tokens, and user preferences. 
-        This data resides entirely on your device and is not transmitted to any external server in this demo environment.
-      </p>
-    </section>
-    
-    <section>
-      <h2 className="text-xl font-bold text-white mb-3">3. Third-Party Services</h2>
-      <p className="mb-4 leading-relaxed">
-        We use simulated AI services for product recommendations. No personal data is used for training external models.
-      </p>
-    </section>
+  <div className="max-w-3xl mx-auto px-4 py-16 animate-fade-in">
+    <h1 className="text-3xl font-bold mb-6 text-slate-900 dark:text-white">Privacy Policy</h1>
+    <div className="prose prose-slate dark:prose-invert text-gray-600 dark:text-gray-300">
+      <p>Last updated: 2024</p>
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">1. Information We Collect</h3>
+      <p>We collect information you provide directly to us, such as when you create an account, make a purchase, or contact customer support.</p>
+      
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">2. How We Use Your Information</h3>
+      <p>We use the information we collect to provide, maintain, and improve our services, to process your transactions, and to communicate with you.</p>
+      
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">3. Data Security</h3>
+      <p>We implement appropriate technical and organizational measures to protect the security of your personal information.</p>
+    </div>
   </div>
 );
 
 export const TermsOfService: React.FC = () => (
-  <div className="max-w-3xl mx-auto px-4 py-16 text-gray-300 animate-fade-in">
-    <h1 className="text-3xl font-bold mb-6 text-white">Terms of Service</h1>
-    
-    <section className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-3">1. Acceptance of Terms</h2>
-      <p className="mb-4 leading-relaxed">
-        By accessing Jojo's Web-Store website, you agree to be bound by these terms of service, all applicable laws and regulations, 
-        and agree that you are responsible for compliance with any applicable local laws.
-      </p>
-    </section>
-
-    <section className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-3">2. Use License</h2>
-      <p className="mb-4 leading-relaxed">
-        Permission is granted to temporarily download one copy of the materials (information or software) on Jojo's Web-Store's website for personal, non-commercial transitory viewing only.
-      </p>
-      <ul className="list-disc pl-5 space-y-2 mt-2">
-        <li>You may not modify or copy the materials.</li>
-        <li>You may not use the materials for any commercial purpose.</li>
-        <li>You may not attempt to decompile or reverse engineer any software contained on Jojo's Web-Store's website.</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2 className="text-xl font-bold text-white mb-3">3. Disclaimer</h2>
-      <p className="mb-4 leading-relaxed">
-        The materials on Jojo's Web-Store's website are provided on an 'as is' basis. Jojo's Web-Store makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
-      </p>
-    </section>
+  <div className="max-w-3xl mx-auto px-4 py-16 animate-fade-in">
+    <h1 className="text-3xl font-bold mb-6 text-slate-900 dark:text-white">Terms of Service</h1>
+    <div className="prose prose-slate dark:prose-invert text-gray-600 dark:text-gray-300">
+      <p>Welcome to Jojo's Web-Store. By accessing our website, you agree to these terms.</p>
+      
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">1. Use of Service</h3>
+      <p>You agree to use our service only for lawful purposes and in accordance with these Terms.</p>
+      
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">2. Product Availability</h3>
+      <p>All products are subject to availability. We reserve the right to discontinue any product at any time.</p>
+      
+      <h3 className="text-xl font-bold mt-6 mb-2 text-slate-900 dark:text-white">3. Limitation of Liability</h3>
+      <p>Jojo's Web-Store shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</p>
+    </div>
   </div>
 );
