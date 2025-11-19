@@ -1,13 +1,27 @@
 import { GoogleGenAI } from "@google/genai";
 import { Product } from "../types";
 
-// Note: In a real app, API keys should not be client-side exposed like this.
-// Since this is a client-only requirement, we assume process.env.API_KEY is injected or handled securely.
-const apiKey = process.env.API_KEY || ''; 
-const ai = new GoogleGenAI({ apiKey });
+// Safe access to environment variable that works in both Node and Browser (with or without polyfills)
+const getApiKey = () => {
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_KEY;
+  }
+  // @ts-ignore
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    // @ts-ignore
+    return process.env.API_KEY;
+  }
+  return '';
+};
+
+const apiKey = getApiKey();
+// Initialize client only if key exists to avoid immediate crash
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const getProductAdvice = async (product: Product, question: string): Promise<string> => {
-  if (!apiKey) return "Please configure your API Key to use the AI Assistant.";
+  if (!ai) return "Please configure your API Key in .env (VITE_API_KEY) to use the AI Assistant.";
 
   try {
     const model = "gemini-2.5-flash";
@@ -38,7 +52,7 @@ export const getProductAdvice = async (product: Product, question: string): Prom
 };
 
 export const getSupportResponse = async (query: string): Promise<string> => {
-  if (!apiKey) return "Please configure your API Key to use the Support Agent.";
+  if (!ai) return "Please configure your API Key in .env (VITE_API_KEY) to use the Support Agent.";
 
   try {
     const model = "gemini-2.5-flash";
@@ -61,7 +75,7 @@ export const getSupportResponse = async (query: string): Promise<string> => {
 
     return response.text || "I didn't quite catch that. Could you please rephrase your issue?";
   } catch (error) {
-    console.error("Gemini Support Error:", error);
-    return "Our AI support agent is currently offline. Please use the contact details below.";
+    console.error("Support Agent Error:", error);
+    return "Our support agent is currently unavailable. Please try again later.";
   }
 };
