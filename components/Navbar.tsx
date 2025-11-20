@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,7 +48,7 @@ const Navbar: React.FC = () => {
               </div>
             </Link>
             <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
-              <Link to="/" className="border-transparent text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent inline-flex items-center px-1 pt-1 text-sm font-medium transition-all hover:tracking-wide">
+              <Link to="/shop" className="border-transparent text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent inline-flex items-center px-1 pt-1 text-sm font-medium transition-all hover:tracking-wide">
                 Shop
               </Link>
               {user?.isAdmin && (
@@ -141,7 +142,7 @@ const Navbar: React.FC = () => {
       {/* Mobile Menu */}
       <div className={`${mobileOpen ? 'block' : 'hidden'} sm:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 animate-slide-up`}>
         <div className="pt-2 pb-3 space-y-1">
-          <Link to="/" className="bg-gray-50 dark:bg-gray-900 border-accent text-accent block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Shop</Link>
+          <Link to="/shop" className="bg-gray-50 dark:bg-gray-900 border-accent text-accent block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Shop</Link>
           {user?.isAdmin && (
             <Link to="/admin" className="border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white block pl-3 pr-4 py-2 border-l-4 text-base font-medium">Dashboard</Link>
           )}
