@@ -55,6 +55,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Backend login failed, attempting offline auth:', err.message);
       
       // Offline Fallback
+      // 1. Check for hardcoded Admin first (Emergency Access)
+      if (email === 'admin@jojos.com' && pass === 'admin123') {
+        const adminUser = { 
+          id: 'admin-offline', 
+          name: 'Jojo Admin', 
+          email: 'admin@jojos.com', 
+          isAdmin: true 
+        };
+        setUser(adminUser);
+        localStorage.setItem('jojo_user', JSON.stringify(adminUser));
+        return;
+      }
+
+      // 2. Check LocalStorage Database
       const dbString = localStorage.getItem('jojo_users_db');
       const db = dbString ? JSON.parse(dbString) : [];
       const existingUser = db.find((u: any) => u.email === email);

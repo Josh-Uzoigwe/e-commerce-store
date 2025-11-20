@@ -58,6 +58,7 @@ mongoose.connect(MONGO_URI)
 
 const seedDatabase = async () => {
   try {
+    // Seed Products
     const count = await Product.countDocuments();
     if (count === 0) {
       console.log("Seeding database with initial products...");
@@ -266,6 +267,23 @@ const seedDatabase = async () => {
       await Product.insertMany(initialProducts);
       console.log("✅ Database seeded with products");
     }
+
+    // Seed Admin User
+    const adminEmail = 'admin@jojos.com';
+    const existingAdmin = await User.findOne({ email: adminEmail });
+    if (!existingAdmin) {
+      console.log("Seeding admin user...");
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
+        id: 'admin-user-id',
+        name: 'Jojo Admin',
+        email: adminEmail,
+        password: hashedPassword,
+        isAdmin: true
+      });
+      console.log("✅ Admin user seeded (admin@jojos.com / admin123)");
+    }
+
   } catch (err) {
     console.error("Seeding error:", err);
   }
