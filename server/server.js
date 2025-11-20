@@ -1,24 +1,18 @@
 import express from 'express';
-import { createRequire } from 'module';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { OAuth2Client } from 'google-auth-library';
-
-// Create require for CommonJS modules like sqlite3
-const require = createRequire(import.meta.url);
-const sqlite3 = require('sqlite3').verbose();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = 3001;
 const SECRET_KEY = 'jojos-secret-key-change-this-in-prod';
-// NOTE: In a real app, this should match the Client ID used in the frontend
+
+// MongoDB Connection URI (Default local instance)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/jojos_store';
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"; 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -26,42 +20,48 @@ const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 app.use(cors());
 app.use(bodyParser.json());
 
-// Database Setup - Use absolute path to avoid CWD issues
-const dbPath = join(__dirname, 'jojos.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) console.error('Database opening error: ', err);
-  else console.log(`Connected to SQLite database at ${dbPath}`);
+// --- Mongoose Schemas & Models ---
+
+// User Schema
+const userSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true }, // Keeping 'id' string for frontend compatibility
+  name: String,
+  email: { type: String, required: true, unique: true },
+  password: { type: String }, // Nullable for Google Auth users
+  isAdmin: { type: Boolean, default: false }
 });
 
-// Initialize Tables
-db.serialize(() => {
-  // Users Table
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    email TEXT UNIQUE,
-    password TEXT,
-    isAdmin INTEGER
-  )`);
+const User = mongoose.model('User', userSchema);
 
-  // Products Table
-  db.run(`CREATE TABLE IF NOT EXISTS products (
-    id TEXT PRIMARY KEY,
-    title TEXT,
-    price REAL,
-    description TEXT,
-    category TEXT,
-    stock INTEGER,
-    image TEXT,
-    rating REAL
-  )`);
+// Product Schema
+const productSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true }, // Keeping 'id' string for frontend compatibility
+  title: { type: String, required: true },
+  price: { type: Number, required: true },
+  description: String,
+  category: String,
+  stock: Number,
+  image: String,
+  rating: Number
+});
 
-  // Seed Products if empty
-  db.get("SELECT count(*) as count FROM products", [], (err, row) => {
-    if (err) return console.error(err);
-    if (row && row.count === 0) {
+const Product = mongoose.model('Product', productSchema);
+
+// --- Database Connection & Seeding ---
+
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log(`✅ Connected to MongoDB at ${MONGO_URI}`);
+    seedDatabase();
+  })
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
+const seedDatabase = async () => {
+  try {
+    const count = await Product.countDocuments();
+    if (count === 0) {
       console.log("Seeding database with initial products...");
-      const products = [
+      const initialProducts = [
         {
           id: '1',
           title: 'Quantum Noise-Canceling Headphones',
@@ -263,105 +263,127 @@ db.serialize(() => {
           rating: 4.2
         }
       ];
-
-      const stmt = db.prepare("INSERT INTO products (id, title, price, description, category, stock, image, rating) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-      products.forEach(p => {
-        stmt.run(p.id, p.title, p.price, p.description, p.category, p.stock, p.image, p.rating);
-      });
-      stmt.finalize();
+      await Product.insertMany(initialProducts);
+      console.log("✅ Database seeded with products");
     }
-  });
-});
+  } catch (err) {
+    console.error("Seeding error:", err);
+  }
+};
 
 // --- Routes ---
 
 // Get All Products
-app.get('/api/products', (req, res) => {
-  db.all("SELECT * FROM products", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find({}).select('-_id -__v'); // Exclude internal fields
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Create Product (Admin)
-app.post('/api/products', (req, res) => {
-  const { id, title, price, description, category, stock, image, rating } = req.body;
-  db.run(
-    "INSERT INTO products (id, title, price, description, category, stock, image, rating) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    [id, title, price, description, category, stock, image, rating],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Product created", id });
-    }
-  );
+app.post('/api/products', async (req, res) => {
+  try {
+    // Frontend sends an ID, but if it doesn't, we generate one
+    const productData = req.body;
+    if (!productData.id) productData.id = Date.now().toString();
+    
+    const product = await Product.create(productData);
+    res.json({ message: "Product created", id: product.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Update Product (Admin)
-app.put('/api/products/:id', (req, res) => {
-  const { title, price, description, category, stock, image, rating } = req.body;
-  db.run(
-    "UPDATE products SET title = ?, price = ?, description = ?, category = ?, stock = ?, image = ?, rating = ? WHERE id = ?",
-    [title, price, description, category, stock, image, rating, req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Product updated" });
-    }
-  );
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Product.findOneAndUpdate({ id }, req.body, { upsert: false });
+    res.json({ message: "Product updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Delete Product (Admin)
-app.delete('/api/products/:id', (req, res) => {
-  db.run("DELETE FROM products WHERE id = ?", req.params.id, function (err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Product.deleteOne({ id });
     res.json({ message: "Product deleted" });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password, name } = req.body;
   try {
+    const { email, password, name } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = Date.now().toString();
-    const isAdmin = email.includes('admin') ? 1 : 0;
+    const isAdmin = email.includes('admin');
 
-    db.run(
-      "INSERT INTO users (id, name, email, password, isAdmin) VALUES (?, ?, ?, ?, ?)",
-      [id, name, email, hashedPassword, isAdmin],
-      function (err) {
-        if (err) return res.status(400).json({ error: "Email likely already exists" });
-        
-        const token = jwt.sign({ id, email, isAdmin: !!isAdmin }, SECRET_KEY, { expiresIn: '24h' });
-        res.json({ 
-          token, 
-          user: { id, name, email, isAdmin: !!isAdmin } 
-        });
-      }
+    const newUser = await User.create({
+      id,
+      name,
+      email,
+      password: hashedPassword,
+      isAdmin
+    });
+
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email, isAdmin: newUser.isAdmin }, 
+      SECRET_KEY, 
+      { expiresIn: '24h' }
     );
+    
+    res.json({ 
+      token, 
+      user: { id: newUser.id, name: newUser.name, email: newUser.email, isAdmin: newUser.isAdmin } 
+    });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Registration error" });
   }
 });
 
 // Login
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-    if (err) return res.status(500).json({ error: "Server error" });
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
     if (!user) return res.status(400).json({ error: "User not found" });
+
+    // Check if password exists (Google users might not have one)
+    if (!user.password) return res.status(400).json({ error: "Please login with Google" });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ error: "Invalid credentials" });
 
-    const isAdmin = user.isAdmin === 1;
-    const token = jwt.sign({ id: user.id, email: user.email, isAdmin }, SECRET_KEY, { expiresIn: '24h' });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, isAdmin: user.isAdmin }, 
+      SECRET_KEY, 
+      { expiresIn: '24h' }
+    );
     
     res.json({ 
       token, 
-      user: { id: user.id, name: user.name, email: user.email, isAdmin } 
+      user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin } 
     });
-  });
+  } catch (e) {
+    res.status(500).json({ error: "Login error" });
+  }
 });
 
 // Google Login
@@ -369,14 +391,9 @@ app.post('/api/auth/google', async (req, res) => {
   const { token } = req.body;
   
   try {
-    // Verify the ID token using Google's official library
-    // Note: In a demo env with a mock ID, this verification will fail.
-    // We add a fallback for demonstration if the CLIENT ID is "MOCK..."
-    
     let payload;
     
     if (GOOGLE_CLIENT_ID.includes("MOCK")) {
-        // Mock payload for demo purposes
         payload = {
             email: "demo.user@gmail.com",
             name: "Demo Google User",
@@ -394,39 +411,41 @@ app.post('/api/auth/google', async (req, res) => {
 
     const { email, name } = payload;
 
-    db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-      if (err) return res.status(500).json({ error: "Database error" });
+    let user = await User.findOne({ email });
 
-      if (user) {
-        // User exists, log them in
-        const isAdmin = user.isAdmin === 1;
-        const jwtToken = jwt.sign({ id: user.id, email: user.email, isAdmin }, SECRET_KEY, { expiresIn: '24h' });
-        res.json({
-          token: jwtToken,
-          user: { id: user.id, name: user.name, email: user.email, isAdmin }
-        });
-      } else {
-        // New user, create account (Password is irrelevant for Google users, we use a dummy hash or allow nulls, here we use a random hash)
-        const id = Date.now().toString();
-        const randomPass = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt.hash(randomPass, 10);
-        const isAdmin = 0;
+    if (user) {
+      // Login existing user
+      const token = jwt.sign(
+        { id: user.id, email: user.email, isAdmin: user.isAdmin }, 
+        SECRET_KEY, 
+        { expiresIn: '24h' }
+      );
+      res.json({
+        token,
+        user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin }
+      });
+    } else {
+      // Create new Google user
+      const id = Date.now().toString();
+      
+      user = await User.create({
+        id,
+        name,
+        email,
+        password: null, // No password for Google users
+        isAdmin: false
+      });
 
-        db.run(
-          "INSERT INTO users (id, name, email, password, isAdmin) VALUES (?, ?, ?, ?, ?)",
-          [id, name, email, hashedPassword, isAdmin],
-          function (err) {
-            if (err) return res.status(500).json({ error: "Failed to create user" });
-            
-            const jwtToken = jwt.sign({ id, email, isAdmin: !!isAdmin }, SECRET_KEY, { expiresIn: '24h' });
-            res.json({ 
-              token: jwtToken, 
-              user: { id, name, email, isAdmin: !!isAdmin } 
-            });
-          }
-        );
-      }
-    });
+      const token = jwt.sign(
+        { id: user.id, email: user.email, isAdmin: user.isAdmin }, 
+        SECRET_KEY, 
+        { expiresIn: '24h' }
+      );
+      res.json({ 
+        token, 
+        user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin } 
+      });
+    }
 
   } catch (error) {
     console.error("Google Auth Error:", error);
