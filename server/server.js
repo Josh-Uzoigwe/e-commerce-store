@@ -282,6 +282,8 @@ const seedDatabase = async () => {
         isAdmin: true
       });
       console.log("✅ Admin user seeded (admin@jojos.com / admin123)");
+    } else {
+        console.log("ℹ️ Admin user already exists");
     }
 
   } catch (err) {
@@ -472,5 +474,6 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 app.listen(PORT, () => {
+  console.log(`🚀 Server v2.0 Started - Admin Seeder Active`);
   console.log(`Server running on http://localhost:${PORT}`);
 });
