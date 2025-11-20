@@ -1,19 +1,33 @@
-import { ethers } from 'ethers';
+// -------------------------------
+// IMPORTS (Ethers v6 style)
+// -------------------------------
+import {
+  BrowserProvider,
+  Contract,
+  formatEther,
+  parseEther
+} from "ethers";
 
-// Types
+// Allow usage of `window.ethereum` in TypeScript without errors
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+// -------------------------------
+// TYPES
+// -------------------------------
 export interface WalletState {
   address: string | null;
   balance: string | null;
   isConnected: boolean;
 }
 
-// --- SMART CONTRACT CONFIGURATION ---
+// -------------------------------
+// SMART CONTRACT SETUP
+// -------------------------------
+const CONTRACT_ADDRESS = "0xfD1fAf7804Ad5b2F8feAcfa50BaB4d9EB45c4F68";
 
-// 1. DEPLOY THE CONTRACT IN 'contracts/PaymentProcessor.sol' USING REMIX (https://remix.ethereum.org/)
-// 2. PASTE THE DEPLOYED CONTRACT ADDRESS HERE:
-const CONTRACT_ADDRESS = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"; // <--- REPLACE THIS WITH YOUR DEPLOYED ADDRESS
-
-// 3. IF YOU CHANGE THE SOLIDITY CODE, UPDATE THIS ABI JSON:
 const CONTRACT_ABI = [
   {
     "inputs": [],
@@ -38,6 +52,19 @@ const CONTRACT_ABI = [
     ],
     "name": "OwnershipTransferred",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "orderId",
+        "type": "string"
+      }
+    ],
+    "name": "pay",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   },
   {
     "anonymous": false,
@@ -95,105 +122,136 @@ const CONTRACT_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "orderId",
-        "type": "string"
-      }
-    ],
-    "name": "pay",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   }
 ];
 
+// -------------------------------
+// CONNECT WALLET
+// -------------------------------
 export const connectWallet = async (): Promise<WalletState> => {
-  // @ts-ignore
-  if (typeof window.ethereum === 'undefined') {
-    throw new Error("MetaMask is not installed!");
+  if (!window.ethereum) {
+    throw new Error("MetaMask or another Web3 wallet is not installed");
   }
 
   try {
-    // @ts-ignore
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new BrowserProvider(window.ethereum);
+
+    // Request accounts from the wallet to ensure the user authorizes access
+    await provider.send("eth_requestAccounts", []);
+
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
+
     const balanceBigInt = await provider.getBalance(address);
-    const balance = ethers.formatEther(balanceBigInt);
+    const balance = formatEther(balanceBigInt);
 
     return {
       address,
       balance,
       isConnected: true
     };
-  } catch (error) {
-    console.error("Wallet connection failed", error);
-    throw error;
+  } catch (err: any) {
+    console.error("Wallet connection failed", err);
+    // Normalize and rethrow error for callers
+    throw new Error(err?.message || "Wallet connection failed");
   }
 };
 
+// -------------------------------
+// LIVE ETH PRICE (CoinGecko)
+// - Caches the price for a short TTL to avoid frequent requests
+// - Falls back to a safe default on error
+// -------------------------------
+let _cachedEthPrice: number | null = null;
+let _cachedAt = 0;
+const ETH_PRICE_TTL = 60_000; // 60 seconds
+
 export const getEthPrice = async (): Promise<number> => {
-  // In production, fetch from CoinGecko or Oracle
-  return 3500.00; // Hardcoded mock price for demo: 1 ETH = $3500
+  const now = Date.now();
+  if (_cachedEthPrice !== null && now - _cachedAt < ETH_PRICE_TTL) {
+    return _cachedEthPrice;
+  }
+
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    );
+
+    if (!res.ok) throw new Error(`CoinGecko responded ${res.status}`);
+
+    const data = await res.json();
+    const price = data?.ethereum?.usd;
+
+    if (typeof price !== "number") {
+      throw new Error("Unexpected CoinGecko response shape");
+    }
+
+    _cachedEthPrice = price;
+    _cachedAt = now;
+    return price;
+  } catch (err) {
+    console.error("Failed to fetch ETH price from CoinGecko", err);
+    // Fallback to a sensible default so the app remains usable
+    return 3500;
+  }
 };
 
-export const sendPayment = async (amountUSD: number, orderId: string) => {
-  // @ts-ignore
-  if (typeof window.ethereum === 'undefined') throw new Error("No Crypto Wallet found");
+// -------------------------------
+// SEND PAYMENT TO CONTRACT
+// -------------------------------
+export const sendPayment = async (
+  amountUSD: number,
+  orderId: string
+): Promise<{ hash: string; receipt: any; success: boolean }> => {
+  if (!window.ethereum) {
+    throw new Error("Crypto wallet not available");
+  }
 
   const ethPrice = await getEthPrice();
-  // Formatting to 18 decimals properly is complex, here we use standard string fixing
-  // for robustness in this demo context.
-  const ethAmount = (amountUSD / ethPrice).toFixed(18); 
-  
+  const ethAmount = (amountUSD / ethPrice).toFixed(18);
+
   try {
-    // @ts-ignore
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new BrowserProvider(window.ethereum);
+
+    // Ensure account access (prompts MetaMask if needed)
+    await provider.send("eth_requestAccounts", []);
+
     const signer = await provider.getSigner();
-    
-    // Initialize Contract
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    console.log(`Initiating Smart Contract Payment: ${ethAmount} ETH for Order ${orderId}`);
+    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    // Call the 'pay' function on the smart contract
-    const transactionResponse = await contract.pay(orderId, {
-      value: ethers.parseEther(ethAmount)
+    console.log(`Sending ${ethAmount} ETH for Order ${orderId}`);
+
+    const tx = await contract.pay(orderId, {
+      value: parseEther(ethAmount)
     });
-    
-    console.log("Transaction Hash:", transactionResponse.hash);
 
-    // Wait for 1 confirmation
-    const receipt = await transactionResponse.wait(1);
-    
+    console.log("Tx Hash:", tx.hash);
+
+    const receipt = await tx.wait(1);
     return {
-        hash: transactionResponse.hash,
-        success: true,
-        receipt
+      hash: tx.hash,
+      receipt,
+      success: true
     };
-  } catch (error: any) {
-    console.error("Smart Contract Payment Failed", error);
-    
-    if(error.code === "ACTION_REJECTED") {
-        throw new Error("User rejected the transaction");
-    }
-    
-    // Fallback for demo if contract address is invalid/not deployed yet
-    if (error.code === "BAD_DATA" || error.message.includes("contract runner") || error.code === "CALL_EXCEPTION") {
-       throw new Error("Contract error. Ensure you have deployed PaymentProcessor.sol and updated the CONTRACT_ADDRESS in services/cryptoService.ts");
+  } catch (err: any) {
+    console.error("Payment error:", err);
+
+    // Common user rejection codes: 4001 (EIP-1193) or provider-specific strings
+    if (err?.code === 4001 || err?.code === "ACTION_REJECTED") {
+      throw new Error("User rejected transaction");
     }
 
-    throw new Error("Blockchain transaction failed: " + (error.reason || error.message));
+    if (
+      err?.code === "BAD_DATA" ||
+      err?.message?.includes("contract runner") ||
+      err?.code === "CALL_EXCEPTION"
+    ) {
+      throw new Error(
+        "Contract error. Confirm the contract is deployed and CONTRACT_ADDRESS is correct."
+      );
+    }
+
+    throw new Error(err?.reason || err?.message || "Blockchain error");
   }
 };
